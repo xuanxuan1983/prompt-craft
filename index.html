@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PromptCraft - 提示词生成器</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg: #fafafa;
+            --card: #ffffff;
+            --border: #e5e5e5;
+            --text: #1a1a1a;
+            --text-secondary: #666666;
+            --text-muted: #999999;
+            --accent: #000000;
+            --accent-light: #f5f5f5;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        header h1 {
+            font-size: 1.75rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 0.95rem;
+        }
+
+        /* Scene Selector */
+        .scene-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            justify-content: center;
+            margin-bottom: 2.5rem;
+        }
+
+        .scene-btn {
+            padding: 0.5rem 1rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 100px;
+            cursor: pointer;
+            font-size: 0.85rem;
+            transition: all 0.2s;
+        }
+
+        .scene-btn:hover {
+            border-color: var(--accent);
+        }
+
+        .scene-btn.active {
+            background: var(--accent);
+            color: white;
+            border-color: var(--accent);
+        }
+
+        /* Builder */
+        .builder {
+            background: var(--card);
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .step {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .step:last-child {
+            border-bottom: none;
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+
+        .step-number {
+            width: 24px;
+            height: 24px;
+            background: var(--accent);
+            color: white;
+            border-radius: 50%;
+            font-size: 0.75rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .step-title {
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        .step-optional {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-left: auto;
+        }
+
+        .step-hint {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 0.75rem;
+        }
+
+        textarea,
+        input[type="text"] {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-family: inherit;
+            font-size: 0.9rem;
+            resize: vertical;
+            transition: border-color 0.2s;
+        }
+
+        textarea:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        textarea {
+            min-height: 80px;
+        }
+
+        /* Templates */
+        .templates-bar {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+            padding: 1rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            background: var(--accent-light);
+        }
+
+        .template-chip {
+            padding: 0.375rem 0.875rem;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .template-chip:hover {
+            border-color: var(--accent);
+        }
+
+        /* Preview */
+        .preview-section {
+            margin-top: 2rem;
+        }
+
+        .preview-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .preview-header h2 {
+            font-size: 1rem;
+            font-weight: 500;
+        }
+
+        .preview-box {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            min-height: 150px;
+            font-family: 'Menlo', monospace;
+            font-size: 0.85rem;
+            line-height: 1.8;
+            white-space: pre-wrap;
+            color: var(--text-secondary);
+        }
+
+        .copy-btn {
+            background: var(--accent);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: opacity 0.2s;
+        }
+
+        .copy-btn:hover {
+            opacity: 0.9;
+        }
+
+        .copy-btn.copied {
+            background: #22c55e;
+        }
+
+        /* Tips */
+        .tips {
+            margin-top: 2rem;
+            padding: 1rem 1.25rem;
+            background: var(--accent-light);
+            border-radius: 8px;
+        }
+
+        .tips-title {
+            font-size: 0.85rem;
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+        }
+
+        .tips-content {
+            font-size: 0.8rem;
+            color: var(--text-secondary);
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 3rem 1rem 2rem;
+            color: var(--text-muted);
+            font-size: 0.8rem;
+        }
+
+        footer a {
+            color: var(--text-secondary);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+
+        .author {
+            margin-bottom: 0.5rem;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .step {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <header>
+            <h1>PromptCraft</h1>
+            <p>基于 Google 提示词工程指南 · 小白也能写出专业提示词</p>
+        </header>
+
+        <!-- Scene Selector -->
+        <div class="scene-grid" id="sceneGrid">
+            <button class="scene-btn active" data-scene="writing">📝 写作</button>
+            <button class="scene-btn" data-scene="problem">💡 问题解决</button>
+            <button class="scene-btn" data-scene="analysis">📊 数据分析</button>
+            <button class="scene-btn" data-scene="creative">🎨 创意</button>
+            <button class="scene-btn" data-scene="extract">🔍 信息提取</button>
+            <button class="scene-btn" data-scene="assistant">💬 对话助手</button>
+        </div>
+
+        <!-- Builder -->
+        <div class="builder">
+            <!-- Templates Bar -->
+            <div class="templates-bar">
+                <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.5rem;">快速模板：</span>
+                <span class="template-chip" onclick="loadTemplate('xiaohongshu')">小红书笔记</span>
+                <span class="template-chip" onclick="loadTemplate('article')">文章撰写</span>
+                <span class="template-chip" onclick="loadTemplate('code')">代码助手</span>
+                <span class="template-chip" onclick="loadTemplate('translate')">翻译润色</span>
+                <span class="template-chip" onclick="loadTemplate('summary')">内容总结</span>
+            </div>
+
+            <!-- Step 1 -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">1</div>
+                    <div class="step-title">角色设定</div>
+                </div>
+                <div class="step-hint">给 AI 一个明确的身份，它会更好地理解你的期望</div>
+                <textarea id="roleInput" placeholder="例如：你是一位资深的文案策划专家，擅长撰写吸引眼球的社交媒体内容..."
+                    oninput="updatePreview()"></textarea>
+            </div>
+
+            <!-- Step 2 -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">2</div>
+                    <div class="step-title">背景信息</div>
+                    <div class="step-optional">可选</div>
+                </div>
+                <div class="step-hint">提供相关背景，让 AI 更准确理解任务情境</div>
+                <textarea id="contextInput" placeholder="例如：目标用户是25-35岁的都市白领女性..." oninput="updatePreview()"></textarea>
+            </div>
+
+            <!-- Step 3 -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">3</div>
+                    <div class="step-title">任务指令</div>
+                </div>
+                <div class="step-hint">清晰具体地描述你需要 AI 完成的任务</div>
+                <textarea id="taskInput" placeholder="例如：请帮我撰写3条小红书笔记标题和开头，主题是'夏日减脂'..."
+                    oninput="updatePreview()"></textarea>
+            </div>
+
+            <!-- Step 4 -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">4</div>
+                    <div class="step-title">输出格式</div>
+                    <div class="step-optional">可选</div>
+                </div>
+                <div class="step-hint">指定输出的结构和格式，获得更规范的回复</div>
+                <textarea id="formatInput" placeholder="例如：请按以下格式输出：&#10;1. 【标题】&#10;2. 【正文】&#10;3. 【话题标签】"
+                    oninput="updatePreview()"></textarea>
+            </div>
+
+            <!-- Step 5 -->
+            <div class="step">
+                <div class="step-header">
+                    <div class="step-number">5</div>
+                    <div class="step-title">约束条件</div>
+                    <div class="step-optional">可选</div>
+                </div>
+                <div class="step-hint">添加限制条件，确保输出符合你的要求</div>
+                <textarea id="constraintInput" placeholder="例如：&#10;- 不要使用过于正式的语言&#10;- 每条内容不超过300字"
+                    oninput="updatePreview()"></textarea>
+            </div>
+        </div>
+
+        <!-- Preview -->
+        <div class="preview-section">
+            <div class="preview-header">
+                <h2>预览</h2>
+            </div>
+            <div class="preview-box" id="previewBox">在上方填写内容，这里会实时显示你的提示词...</div>
+            <button class="copy-btn" onclick="copyPrompt()">📋 复制提示词</button>
+        </div>
+
+        <!-- Tips -->
+        <div class="tips" id="tipsPanel">
+            <div class="tips-title">💡 技巧提示</div>
+            <div class="tips-content" id="tipsContent">使用具体、明确的指令，而非模糊的描述。例如"写一段100字的产品介绍"比"写个产品介绍"更好。</div>
+        </div>
+    </div>
+
+    <footer>
+        <div class="author">Made with ❤️ by <a href="https://github.com/xuanxuan-ai" target="_blank">萱萱</a></div>
+        <div>基于 <a href="https://cloud.google.com/vertex-ai/docs/generative-ai/learn/prompt-engineering"
+                target="_blank">Google Prompt Engineering 白皮书</a></div>
+    </footer>
+
+    <script>
+        const templates = {
+            xiaohongshu: {
+                role: '你是一位小红书爆款内容创作专家，熟悉平台算法和用户喜好。',
+                context: '目标用户：18-35岁年轻用户',
+                task: '请为以下主题创作3条小红书笔记，每条包含标题、正文开头和话题标签。',
+                format: '每条笔记格式：\n📌 【标题】\n✍️ 【开头】30-50字\n#️⃣ 【话题】3-5个',
+                constraint: '- 使用口语化、亲切的语气\n- 标题必须包含数字或问句'
+            },
+            article: {
+                role: '你是一位资深内容策划师，擅长撰写深度长文，结构清晰、可读性强。',
+                context: '',
+                task: '请为以下主题撰写一篇结构完整的文章。',
+                format: '1. 【开头】抛出痛点或故事\n2. 【正文】分3-5个小标题\n3. 【结尾】总结+行动建议',
+                constraint: '每段不超过150字，使用具体案例支持观点'
+            },
+            code: {
+                role: '你是一位经验丰富的高级软件工程师，善于写出清晰、高效的代码。',
+                context: '',
+                task: '请帮我完成以下编程任务，并附上详细注释。',
+                format: '1. 解题思路\n2. 完整代码（带注释）\n3. 复杂度分析',
+                constraint: '代码必须可直接运行，考虑边界情况'
+            },
+            translate: {
+                role: '你是一位专业翻译，精通中英双语，擅长信达雅的翻译。',
+                context: '',
+                task: '请将以下内容翻译，保持原文风格和语气。',
+                format: '【译文】翻译内容\n【说明】关键词汇选择说明',
+                constraint: '保持原文语气，专业术语需准确'
+            },
+            summary: {
+                role: '你是一位专业的内容分析师，善于快速提取文章核心要点。',
+                context: '',
+                task: '请阅读以下内容，生成结构化摘要。',
+                format: '📌 【一句话概述】\n🔑 【核心要点】3-5个\n💡 【关键结论】',
+                constraint: '保持客观中立，语言简洁精炼'
+            }
+        };
+
+        const sceneTips = {
+            writing: '使用 Few-shot 技巧：提供2-3个你喜欢的范文示例，AI 会自动学习其中的风格和结构。',
+            problem: '使用 Chain-of-Thought：添加"请一步一步分析这个问题"，引导 AI 进行深度推理。',
+            analysis: '使用格式化输出：明确指定表格、JSON 或分点列表格式，获得结构化回复。',
+            creative: '使用 Tree of Thought：要求 AI "从3个不同角度思考"，获得更多创意方向。',
+            extract: '使用 JSON 输出：指定 JSON 格式输出，便于后续程序化处理。',
+            assistant: '使用 System Prompt：用"你是..."开头设定身份，这是最有效的角色设定方式。'
+        };
+
+        // Scene selection
+        document.getElementById('sceneGrid').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('scene-btn')) return;
+            document.querySelectorAll('.scene-btn').forEach(b => b.classList.remove('active'));
+            e.target.classList.add('active');
+            document.getElementById('tipsContent').textContent = sceneTips[e.target.dataset.scene];
+        });
+
+        // Load template
+        function loadTemplate(name) {
+            const t = templates[name];
+            if (!t) return;
+            document.getElementById('roleInput').value = t.role;
+            document.getElementById('contextInput').value = t.context;
+            document.getElementById('taskInput').value = t.task;
+            document.getElementById('formatInput').value = t.format;
+            document.getElementById('constraintInput').value = t.constraint;
+            updatePreview();
+        }
+
+        // Update preview
+        function updatePreview() {
+            const role = document.getElementById('roleInput').value.trim();
+            const context = document.getElementById('contextInput').value.trim();
+            const task = document.getElementById('taskInput').value.trim();
+            const format = document.getElementById('formatInput').value.trim();
+            const constraint = document.getElementById('constraintInput').value.trim();
+
+            let text = '';
+            if (role) text += `【角色设定】\n${role}\n\n`;
+            if (context) text += `【背景信息】\n${context}\n\n`;
+            if (task) text += `【任务指令】\n${task}\n\n`;
+            if (format) text += `【输出格式】\n${format}\n\n`;
+            if (constraint) text += `【约束条件】\n${constraint}`;
+
+            document.getElementById('previewBox').textContent = text.trim() || '在上方填写内容，这里会实时显示你的提示词...';
+        }
+
+        // Copy
+        function copyPrompt() {
+            const text = document.getElementById('previewBox').textContent;
+            if (text.includes('在上方填写')) return;
+            navigator.clipboard.writeText(text).then(() => {
+                const btn = document.querySelector('.copy-btn');
+                btn.textContent = '✅ 已复制';
+                btn.classList.add('copied');
+                setTimeout(() => {
+                    btn.textContent = '📋 复制提示词';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+    </script>
+</body>
+
+</html>
