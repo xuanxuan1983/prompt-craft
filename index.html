@@ -235,6 +235,29 @@
             background: #22c55e;
         }
 
+        .enhance-btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 2rem;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 1rem;
+            transition: all 0.3s;
+        }
+
+        .enhance-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .enhance-btn.enhanced {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+        }
+
         /* Tips */
         .tips {
             margin-top: 2rem;
@@ -380,6 +403,7 @@
                 <h2>预览</h2>
             </div>
             <div class="preview-box" id="previewBox">在上方填写内容，这里会实时显示你的提示词...</div>
+            <button class="enhance-btn" onclick="enhancePrompt()">✨ 一键增强提示词</button>
             <button class="copy-btn" onclick="copyPrompt()">📋 复制提示词</button>
         </div>
 
@@ -443,6 +467,123 @@
             extract: '使用 JSON 输出：指定 JSON 格式输出，便于后续程序化处理。',
             assistant: '使用 System Prompt：用"你是..."开头设定身份，这是最有效的角色设定方式。'
         };
+
+        // 深度增强规则
+        const enhancementRules = {
+            writing: {
+                roleEnhance: (role) => `${role}\n\n【专业背景】\n- 拥有10年以上内容创作经验\n- 深谙用户心理和传播规律\n- 作品曾获得百万级曝光`,
+                addFewShot: () => `\n【优秀范例】\n以下是一个高质量内容的结构示范：\n---\n标题：[数字/问句+痛点关键词]\n开头：用故事或痛点切入，引发共鸣\n正文：分点论述，每段不超过100字\n结尾：总结+行动号召\n---\n请参考此结构进行创作。`,
+                addThinking: () => `\n【创作思路】\n在开始写作前，请先完成以下思考：\n1. 目标读者是谁？他们最关心什么？\n2. 这个主题的3个核心卖点是什么？\n3. 用什么故事/案例能引起共鸣？\n4. 读者看完后希望他们采取什么行动？`,
+                constraintEnhance: (constraint) => `${constraint}\n- 使用短句，每句不超过20字\n- 多用具体数字增强说服力\n- 避免使用"众所周知"等空洞表达\n- 开头必须在3秒内抓住注意力`
+            },
+            problem: {
+                roleEnhance: (role) => `${role}\n\n【思维特点】\n- 擅长结构化分析和系统思考\n- 善于发现问题本质和根因\n- 能够从多个角度评估解决方案`,
+                addFewShot: () => '',
+                addThinking: () => `\n【分析框架 Chain-of-Thought】\n请按以下步骤逐步分析：\n\nStep 1: 问题定义\n- 核心问题是什么？\n- 问题的边界在哪里？\n\nStep 2: 原因分析\n- 导致这个问题的直接原因？\n- 更深层的根本原因？\n\nStep 3: 方案评估\n- 列出3个可行方案\n- 评估每个方案的优缺点\n- 推荐最佳方案并说明理由\n\nStep 4: 行动计划\n- 具体的执行步骤\n- 潜在风险和应对措施`,
+                constraintEnhance: (constraint) => `${constraint}\n- 每个结论必须有论据支持\n- 避免模糊表述，要给出具体建议\n- 如有假设条件，需明确说明`
+            },
+            analysis: {
+                roleEnhance: (role) => `${role}\n\n【分析能力】\n- 精通数据可视化和统计分析\n- 善于从数据中发现洞察\n- 能够用数据讲故事`,
+                addFewShot: () => '',
+                addThinking: () => `\n【分析方法论】\n请按以下结构进行分析：\n\n1. 数据概览\n   - 数据规模和时间范围\n   - 关键指标定义\n\n2. 趋势分析\n   - 主要趋势和模式\n   - 异常值识别\n\n3. 洞察提取\n   - 3-5个核心发现\n   - 发现背后的可能原因\n\n4. 行动建议\n   - 基于数据的具体建议\n   - 需要进一步验证的假设`,
+                constraintEnhance: (constraint) => `${constraint}\n- 所有结论需附上数据支持\n- 使用表格或结构化格式呈现\n- 区分"事实"和"推测"\n- 给出置信度评估`
+            },
+            creative: {
+                roleEnhance: (role) => `${role}\n\n【创意特质】\n- 思维活跃，善于跨界联想\n- 能够打破常规思维定式\n- 注重创意的可落地性`,
+                addFewShot: () => '',
+                addThinking: () => `\n【创意发散 Tree-of-Thought】\n请从以下3个不同角度思考：\n\n🌳 角度A：用户视角\n- 用户的真实需求是什么？\n- 什么能让用户感到惊喜？\n\n🌳 角度B：反向思维\n- 如果完全相反会怎样？\n- 竞争对手不会做什么？\n\n🌳 角度C：跨界借鉴\n- 其他行业如何解决类似问题？\n- 有什么可以借鉴的创意？\n\n最后，综合以上角度，提出最佳创意方案。`,
+                constraintEnhance: (constraint) => `${constraint}\n- 每个创意方案需说明执行可行性\n- 标注创意的新颖度（1-5星）\n- 提供视觉化描述或示意`
+            },
+            extract: {
+                roleEnhance: (role) => `${role}\n\n【提取能力】\n- 善于快速定位关键信息\n- 能够准确理解上下文语义\n- 具备信息去噪和归类能力`,
+                addFewShot: () => `\n【输出示例】\n\`\`\`json\n{\n  "extracted_info": {\n    "key_1": "提取的值1",\n    "key_2": "提取的值2",\n    "confidence": 0.95\n  },\n  "source_location": "原文位置",\n  "notes": "补充说明"\n}\n\`\`\``,
+                addThinking: () => `\n【提取策略】\n1. 首先通读全文，理解整体结构\n2. 识别并标记目标信息的位置\n3. 验证提取内容的准确性\n4. 如信息模糊或缺失，明确标注`,
+                constraintEnhance: (constraint) => `${constraint}\n- 保持原文表述，不要进行推断\n- 对不确定的信息标注置信度\n- 如有多个候选答案，全部列出\n- 找不到的信息标注为 null`
+            },
+            assistant: {
+                roleEnhance: (role) => `${role}\n\n【对话风格】\n- 友好、专业、有耐心\n- 善于主动澄清和确认需求\n- 回复简洁但信息完整`,
+                addFewShot: () => '',
+                addThinking: () => `\n【对话原则】\n1. 先理解再回答：如有歧义，先确认用户意图\n2. 分步骤回复：复杂问题分解成易懂的部分\n3. 主动引导：在回答后提供相关的后续建议\n4. 边界意识：超出能力范围时诚实说明`,
+                constraintEnhance: (constraint) => `${constraint}\n- 每次回复不超过3个要点\n- 使用通俗易懂的语言\n- 适时使用表情增加亲和力\n- 在结尾可提出引导性问题`
+            }
+        };
+
+        // 增强提示词函数
+        function enhancePrompt() {
+            const role = document.getElementById('roleInput').value.trim();
+            const context = document.getElementById('contextInput').value.trim();
+            const task = document.getElementById('taskInput').value.trim();
+            const format = document.getElementById('formatInput').value.trim();
+            const constraint = document.getElementById('constraintInput').value.trim();
+
+            // 获取当前选中的场景
+            const activeScene = document.querySelector('.scene-btn.active');
+            const sceneType = activeScene ? activeScene.dataset.scene : 'writing';
+            const rules = enhancementRules[sceneType];
+
+            if (!role && !task) {
+                alert('请至少填写「角色设定」或「任务指令」后再增强');
+                return;
+            }
+
+            // 构建增强后的提示词
+            let enhancedText = '';
+
+            // 增强角色
+            if (role) {
+                const enhancedRole = rules.roleEnhance(role);
+                enhancedText += `【角色设定】\n${enhancedRole}\n\n`;
+            }
+
+            // 背景信息
+            if (context) {
+                enhancedText += `【背景信息】\n${context}\n\n`;
+            }
+
+            // 任务指令
+            if (task) {
+                enhancedText += `【任务指令】\n${task}\n`;
+            }
+
+            // 添加 Few-shot 示例
+            const fewShot = rules.addFewShot();
+            if (fewShot) {
+                enhancedText += fewShot + '\n';
+            }
+
+            // 添加思考框架
+            const thinking = rules.addThinking();
+            if (thinking) {
+                enhancedText += thinking + '\n\n';
+            }
+
+            // 输出格式
+            if (format) {
+                enhancedText += `【输出格式】\n${format}\n\n`;
+            }
+
+            // 增强约束条件
+            if (constraint) {
+                const enhancedConstraint = rules.constraintEnhance(constraint);
+                enhancedText += `【约束条件】\n${enhancedConstraint}`;
+            } else {
+                // 即使没有约束，也添加基础约束
+                const baseConstraint = rules.constraintEnhance('请注意以下要求：');
+                enhancedText += `【约束条件】\n${baseConstraint}`;
+            }
+
+            // 更新预览
+            document.getElementById('previewBox').textContent = enhancedText.trim();
+
+            // 更新按钮状态
+            const btn = document.querySelector('.enhance-btn');
+            btn.textContent = '✅ 已增强';
+            btn.classList.add('enhanced');
+            setTimeout(() => {
+                btn.textContent = '✨ 一键增强提示词';
+                btn.classList.remove('enhanced');
+            }, 2000);
+        }
 
         // Scene selection
         document.getElementById('sceneGrid').addEventListener('click', (e) => {
