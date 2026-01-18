@@ -333,10 +333,9 @@
             <div class="templates-bar">
                 <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.5rem;">快速模板：</span>
                 <span class="template-chip" onclick="loadTemplate('xiaohongshu')">小红书笔记</span>
-                <span class="template-chip" onclick="loadTemplate('article')">文章撰写</span>
-                <span class="template-chip" onclick="loadTemplate('code')">代码助手</span>
                 <span class="template-chip" onclick="loadTemplate('translate')">翻译润色</span>
                 <span class="template-chip" onclick="loadTemplate('summary')">内容总结</span>
+                <span class="template-chip" onclick="openGuizangRepo()">归藏模板库</span>
             </div>
 
             <!-- Step 1 -->
@@ -604,7 +603,9 @@
             document.getElementById('constraintInput').value = t.constraint;
             updatePreview();
         }
-
+        function openGuizangRepo() {
+            window.open('https://github.com/op7418/guizang-s-prompt', '_blank');
+        }
         // Update preview
         function updatePreview() {
             const role = document.getElementById('roleInput').value.trim();
